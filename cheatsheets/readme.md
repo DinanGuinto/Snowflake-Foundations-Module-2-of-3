@@ -1,7 +1,6 @@
+# 🧊 Snowflake SQL CheatSheet — Time Travel, Cloning & Retention
 
-# 🧊 Snowflake SQL CheatSheet — Time Travel & Cloning
-
-> SQL walkthrough for table retention, cloning, query tracking, and time travel recovery using the Tasty Bytes dataset.
+> SQL walkthrough for table retention, cloning, query tracking, time travel recovery, transient/temporary table behavior, and metadata inspection using the Tasty Bytes dataset.
 
 ---
 
@@ -19,6 +18,7 @@
 
 | **Command**         | **Purpose**                             | **Syntax**                                                                 | **Example** |
 |---------------------|------------------------------------------|-----------------------------------------------------------------------------|-------------|
+| `DROP TABLE`        | Remove dev table if exists               | `DROP TABLE TASTY_BYTES.RAW_POS.TRUCK_DEV;`                                 | Cleanup |
 | `CREATE OR REPLACE TABLE ... CLONE ...` | Clone a table                        | `CREATE OR REPLACE TABLE tasty_bytes.raw_pos.truck_dev CLONE tasty_bytes.raw_pos.truck;` | Clone truck table |
 | `SELECT ...`        | Preview cloned table                     | `SELECT t.truck_id, t.year, t.make, t.model FROM tasty_bytes.raw_pos.truck_dev t;` | View truck_dev |
 | `SELECT ...`        | Correct age calculation                  | `SELECT t.truck_id, t.year, t.make, t.model, (YEAR(CURRENT_DATE()) - t.year) AS truck_age FROM tasty_bytes.raw_pos.truck_dev t;` | Calculate truck age |
@@ -59,10 +59,39 @@
 
 ---
 
+## 🧱 Transient & Temporary Tables
+
+| **Command**         | **Purpose**                             | **Syntax**                                                                 | **Example** |
+|---------------------|------------------------------------------|-----------------------------------------------------------------------------|-------------|
+| `CREATE TRANSIENT TABLE ... CLONE ...` | Create transient clone         | `CREATE TRANSIENT TABLE TASTY_BYTES.RAW_POS.TRUCK_TRANSIENT CLONE TASTY_BYTES.RAW_POS.TRUCK;` | Transient clone |
+| `CREATE TEMPORARY TABLE ... CLONE ...` | Create temporary clone         | `CREATE TEMPORARY TABLE TASTY_BYTES.RAW_POS.TRUCK_TEMPORARY CLONE TASTY_BYTES.RAW_POS.TRUCK;` | Temporary clone |
+| `SHOW TABLES LIKE 'TRUCK%'` | List truck-related tables         | `SHOW TABLES LIKE 'TRUCK%';`                                               | Filtered audit |
+| `ALTER TABLE ... SET DATA_RETENTION_TIME_IN_DAYS = 90` | Set retention for standard table | `ALTER TABLE TASTY_BYTES.RAW_POS.TRUCK SET DATA_RETENTION_TIME_IN_DAYS = 90;` | Success |
+| `ALTER TABLE ... SET DATA_RETENTION_TIME_IN_DAYS = 90` | Attempt on transient table     | `ALTER TABLE TASTY_BYTES.RAW_POS.TRUCK_TRANSIENT SET DATA_RETENTION_TIME_IN_DAYS = 90;` | Fails |
+| `ALTER TABLE ... SET DATA_RETENTION_TIME_IN_DAYS = 90` | Attempt on temporary table     | `ALTER TABLE TASTY_BYTES.RAW_POS.TRUCK_TEMPORARY SET DATA_RETENTION_TIME_IN_DAYS = 90;` | Fails |
+| `ALTER TABLE ... SET DATA_RETENTION_TIME_IN_DAYS = 0`  | Set retention to 0 (transient) | `ALTER TABLE TASTY_BYTES.RAW_POS.TRUCK_TRANSIENT SET DATA_RETENTION_TIME_IN_DAYS = 0;` | Success |
+| `ALTER TABLE ... SET DATA_RETENTION_TIME_IN_DAYS = 0`  | Set retention to 0 (temporary) | `ALTER TABLE TASTY_BYTES.RAW_POS.TRUCK_TEMPORARY SET DATA_RETENTION_TIME_IN_DAYS = 0;` | Success |
+
+---
+
+## 🧬 Advanced Cloning & Metadata Inspection
+
+| **Command**         | **Purpose**                             | **Syntax**                                                                 | **Example** |
+|---------------------|------------------------------------------|-----------------------------------------------------------------------------|-------------|
+| `CREATE OR REPLACE TABLE ... CLONE ...` | Clone truck table             | `CREATE OR REPLACE TABLE tasty_bytes.raw_pos.truck_clone CLONE tasty_bytes.raw_pos.truck;` | Clone truck |
+| `SELECT * FROM INFORMATION_SCHEMA.TABLE_STORAGE_METRICS` | View storage metadata        | `SELECT * FROM TASTY_BYTES.INFORMATION_SCHEMA.TABLE_STORAGE_METRICS WHERE TABLE_NAME = 'TRUCK_CLONE' OR TABLE_NAME = 'TRUCK';` | Compare size |
+| `SELECT * FROM INFORMATION_SCHEMA.TABLES` | View table metadata           | `SELECT * FROM TASTY_BYTES.INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TRUCK_CLONE' OR TABLE_NAME = 'TRUCK';` | Compare metadata |
+| `INSERT INTO ... SELECT * FROM ...` | Duplicate data into clone     | `INSERT INTO tasty_bytes.raw_pos.truck_clone SELECT * FROM tasty_bytes.raw_pos.truck;` | Double clone size |
+| `CREATE OR REPLACE SCHEMA ... CLONE ...` | Clone schema                  | `CREATE OR REPLACE SCHEMA tasty_bytes.raw_pos_clone CLONE tasty_bytes.raw_pos;` | Schema clone |
+| `CREATE OR REPLACE DATABASE ... CLONE ...` | Clone database                | `CREATE OR REPLACE DATABASE tasty_bytes_clone CLONE tasty_bytes;` | DB clone |
+| `CREATE OR REPLACE TABLE ... CLONE ... AT(OFFSET => ...)` | Time travel clone            | `CREATE OR REPLACE TABLE tasty_bytes.raw_pos.truck_clone_time_travel CLONE tasty_bytes.raw_pos.truck AT(OFFSET => -60*10);` | Clone past state |
+
+---
+
 ## 🧠 UPT/WIT Tags
 
-- **UPT**: Understand cloning, retention, and time travel recovery using query IDs and timestamps  
-- **WIT**: Practice offset recovery, variable tracking, and mistake rollback
+- **UPT**: Understand cloning types, retention policies, time travel syntax, and metadata inspection  
+- **WIT**: Practice schema/database cloning, offset-based recovery, and storage metrics analysis
 
 ---
 
