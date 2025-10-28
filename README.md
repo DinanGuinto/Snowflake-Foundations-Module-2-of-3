@@ -42,6 +42,10 @@
 
 ---
 
+## 🙌 Credits
+
+This module summary was compiled by **Ferdinand**, Data Engineer
+
 ## 🧪 SQL Anchors
 
 ```sql
@@ -56,3 +60,7 @@ CREATE RESOURCE MONITOR my_monitor
 WITH CREDIT_QUOTA = 100
 TRIGGERS ON 80 PERCENT DO NOTIFY
 ON 100 PERCENT DO SUSPEND;
+
+## 🙌 Credits
+
+This module summary was compiled by **Ferdinand**, a data engineer
